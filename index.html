@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ESP32 Live Charts</title>
+<title>ESP32 Cloud Dashboard</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -10,73 +10,67 @@
 
 <style>
 body {
-  background: #020617;
-  color: white;
-  font-family: Arial;
-  text-align: center;
+  background:#020617;
+  color:white;
+  font-family:Arial;
+  text-align:center;
 }
 canvas {
-  max-width: 95%;
-  margin: 20px auto;
+  max-width:95%;
+  margin:20px auto;
 }
 </style>
 </head>
 
 <body>
 
-<h1>📊 ESP32 Live Temperature Graph</h1>
+<h1>📊 ESP32 Live Temperature</h1>
 
 <canvas id="tempChart"></canvas>
 <canvas id="humChart"></canvas>
 
 <script>
-var firebaseConfig = {
+firebase.initializeApp({
   databaseURL: "https://temp-humidity-monitoring-sys-default-rtdb.firebaseio.com/"
-};
-firebase.initializeApp(firebaseConfig);
+});
 
-var db = firebase.database();
-var labels = [];
-var tempData = [];
-var humData = [];
+const db = firebase.database();
 
-const tempChart = new Chart(
-  document.getElementById('tempChart'),
-  {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Temperature (°C)',
-        data: tempData,
-        borderColor: 'red',
-        fill: false
-      }]
-    }
+let labels = [];
+let tempData = [];
+let humData = [];
+
+const tempChart = new Chart(document.getElementById("tempChart"), {
+  type: "line",
+  data: {
+    labels: labels,
+    datasets: [{
+      label: "Temperature (°C)",
+      data: tempData,
+      borderColor: "red",
+      fill: false
+    }]
   }
-);
+});
 
-const humChart = new Chart(
-  document.getElementById('humChart'),
-  {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Humidity (%)',
-        data: humData,
-        borderColor: 'blue',
-        fill: false
-      }]
-    }
+const humChart = new Chart(document.getElementById("humChart"), {
+  type: "line",
+  data: {
+    labels: labels,
+    datasets: [{
+      label: "Humidity (%)",
+      data: humData,
+      borderColor: "blue",
+      fill: false
+    }]
   }
-);
+});
 
-db.ref("sensor_data").limitToLast(20).on("child_added", snapshot => {
-  const time = new Date(snapshot.key * 1000).toLocaleTimeString();
+db.ref("sensor_data").limitToLast(20).on("child_added", snap => {
+  const time = new Date(snap.key * 1000).toLocaleTimeString();
   labels.push(time);
-  tempData.push(snapshot.val().temperature);
-  humData.push(snapshot.val().humidity);
+  tempData.push(snap.val().temperature);
+  humData.push(snap.val().humidity);
 
   tempChart.update();
   humChart.update();
@@ -85,3 +79,4 @@ db.ref("sensor_data").limitToLast(20).on("child_added", snapshot => {
 
 </body>
 </html>
+
