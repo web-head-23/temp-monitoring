@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESP32 Live Charts</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+  background: #020617;
+  color: white;
+  font-family: Arial;
+  text-align: center;
+}
+canvas {
+  max-width: 95%;
+  margin: 20px auto;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📊 ESP32 Live Temperature Graph</h1>
+
+<canvas id="tempChart"></canvas>
+<canvas id="humChart"></canvas>
+
+<script>
+var firebaseConfig = {
+  databaseURL: "https://temp-humidity-monitoring-sys-default-rtdb.firebaseio.com/"
+};
+firebase.initializeApp(firebaseConfig);
+
+var db = firebase.database();
+var labels = [];
+var tempData = [];
+var humData = [];
+
+const tempChart = new Chart(
+  document.getElementById('tempChart'),
+  {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Temperature (°C)',
+        data: tempData,
+        borderColor: 'red',
+        fill: false
+      }]
+    }
+  }
+);
+
+const humChart = new Chart(
+  document.getElementById('humChart'),
+  {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Humidity (%)',
+        data: humData,
+        borderColor: 'blue',
+        fill: false
+      }]
+    }
+  }
+);
+
+db.ref("sensor_data").limitToLast(20).on("child_added", snapshot => {
+  const time = new Date(snapshot.key * 1000).toLocaleTimeString();
+  labels.push(time);
+  tempData.push(snapshot.val().temperature);
+  humData.push(snapshot.val().humidity);
+
+  tempChart.update();
+  humChart.update();
+});
+</script>
+
+</body>
+</html>
