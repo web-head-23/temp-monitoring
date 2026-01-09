@@ -105,10 +105,13 @@ db.ref("sensor_data")
 // ===== PAST 7 DAYS TEMP ONLY =====
 const history = {};
 
+// ===== 7 DAYS HISTORY (TEMP ONLY — SAFE) =====
 db.ref("sensor_data").on("child_added", snap => {
   const ts = Number(snap.key) * 1000;
   const date = new Date(ts).toLocaleDateString();
   const temp = snap.val().temperature;
+
+  if (temp === undefined) return; // safety
 
   if (!history[date]) {
     history[date] = { min: temp, max: temp };
@@ -119,6 +122,7 @@ db.ref("sensor_data").on("child_added", snap => {
 
   updateHistoryTable();
 });
+
 
 function updateHistoryTable() {
   const table = document.getElementById("historyTable");
