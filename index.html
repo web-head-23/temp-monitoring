@@ -15,7 +15,8 @@ body {
   text-align:center;
   padding:20px;
 }
-h1 { color:#eff4f4; }
+h1 { color:#eeff00; }
+h2 { color:rgb(250, 2, 188)}
 
 .card {
   background:#0f172a;
@@ -46,14 +47,14 @@ td {
 
 <!-- CURRENT -->
 <div class="card">
-  <h2>Current</h2>
+  <h2>current temp & humidity</h2>
   <div class="value" id="curTemp">-- °C</div>
   <div class="value" id="curHum">-- %</div>
 </div>
 
 <!-- TODAY -->
 <div class="card">
-  <h2>Today (Min / Max)</h2>
+  <h2>today (min/max) temp</h2>
   <div class="value">
     <span id="todayMin">--</span> °C /
     <span id="todayMax">--</span> °C
@@ -62,7 +63,7 @@ td {
 
 <!-- PAST 7 DAYS -->
 <div class="card">
-  <h2>Past 7 Days (Temp)</h2>
+  <h2>last 7 days :</h2>
   <table id="historyTable">
     <tr>
       <td><b>Date</b></td>
