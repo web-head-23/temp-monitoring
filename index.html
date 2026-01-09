@@ -2,11 +2,10 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Live Temp & Humidity Dashboard</title>
+<title>ESP32 Temp Dashboard</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body {
@@ -14,70 +13,133 @@ body {
   color:white;
   font-family:Arial;
   text-align:center;
+  padding:20px;
 }
-canvas {
-  max-width:95%;
-  margin:20px auto;
+h1 { color:#eff4f4; }
+
+.card {
+  background:#0f172a;
+  padding:18px;
+  margin:15px auto;
+  border-radius:14px;
+  max-width:360px;
+}
+
+.value { font-size:2em; }
+.small { opacity:0.8; font-size:1em; }
+
+table {
+  width:100%;
+  margin-top:10px;
+  border-collapse:collapse;
+}
+td {
+  padding:6px;
+  border-bottom:1px solid #1e293b;
 }
 </style>
 </head>
 
 <body>
 
-<h1>live temp & humidity</h1></h1>
+<h1>temp & humidity dashboard</h1>
 
-<canvas id="tempChart"></canvas>
-<canvas id="humChart"></canvas>
+<!-- CURRENT -->
+<div class="card">
+  <h2>Current</h2>
+  <div class="value" id="curTemp">-- °C</div>
+  <div class="value" id="curHum">-- %</div>
+</div>
+
+<!-- TODAY -->
+<div class="card">
+  <h2>Today (Min / Max)</h2>
+  <div class="value">
+    <span id="todayMin">--</span> °C /
+    <span id="todayMax">--</span> °C
+  </div>
+</div>
+
+<!-- PAST 7 DAYS -->
+<div class="card">
+  <h2>Past 7 Days (Temp)</h2>
+  <table id="historyTable">
+    <tr>
+      <td><b>Date</b></td>
+      <td><b>Min</b></td>
+      <td><b>Max</b></td>
+    </tr>
+  </table>
+</div>
 
 <script>
+// 🔥 Firebase
 firebase.initializeApp({
   databaseURL: "https://temp-humidity-monitoring-sys-default-rtdb.firebaseio.com/"
 });
-
 const db = firebase.database();
 
-let labels = [];
-let tempData = [];
-let humData = [];
+// ===== CURRENT + TODAY =====
+const todayStart = Math.floor(new Date().setHours(0,0,0,0)/1000);
 
-const tempChart = new Chart(document.getElementById("tempChart"), {
-  type: "line",
-  data: {
-    labels: labels,
-    datasets: [{
-      label: "Temperature (°C)",
-      data: tempData,
-      borderColor: "red",
-      fill: false
-    }]
+let todayMin = 999, todayMax = -999;
+
+db.ref("sensor_data")
+.orderByKey()
+.startAt(String(todayStart))
+.on("child_added", snap => {
+  const t = snap.val().temperature;
+  const h = snap.val().humidity;
+
+  document.getElementById("curTemp").innerHTML = t + " °C";
+  document.getElementById("curHum").innerHTML = h + " %";
+
+  todayMin = Math.min(todayMin, t);
+  todayMax = Math.max(todayMax, t);
+
+  document.getElementById("todayMin").innerHTML = todayMin.toFixed(1);
+  document.getElementById("todayMax").innerHTML = todayMax.toFixed(1);
+});
+
+// ===== PAST 7 DAYS TEMP ONLY =====
+const history = {};
+
+db.ref("sensor_data").on("child_added", snap => {
+  const ts = Number(snap.key) * 1000;
+  const date = new Date(ts).toLocaleDateString();
+  const temp = snap.val().temperature;
+
+  if (!history[date]) {
+    history[date] = { min: temp, max: temp };
+  } else {
+    history[date].min = Math.min(history[date].min, temp);
+    history[date].max = Math.max(history[date].max, temp);
   }
+
+  updateHistoryTable();
 });
 
-const humChart = new Chart(document.getElementById("humChart"), {
-  type: "line",
-  data: {
-    labels: labels,
-    datasets: [{
-      label: "Humidity (%)",
-      data: humData,
-      borderColor: "blue",
-      fill: false
-    }]
-  }
-});
+function updateHistoryTable() {
+  const table = document.getElementById("historyTable");
+  table.innerHTML = `
+    <tr>
+      <td><b>Date</b></td>
+      <td><b>Min</b></td>
+      <td><b>Max</b></td>
+    </tr>`;
 
-db.ref("sensor_data").limitToLast(20).on("child_added", snap => {
-  const time = new Date(snap.key * 1000).toLocaleTimeString();
-  labels.push(time);
-  tempData.push(snap.val().temperature);
-  humData.push(snap.val().humidity);
+  const dates = Object.keys(history).slice(-7).reverse();
 
-  tempChart.update();
-  humChart.update();
-});
+  dates.forEach(d => {
+    table.innerHTML += `
+      <tr>
+        <td>${d}</td>
+        <td>${history[d].min.toFixed(1)} °C</td>
+        <td>${history[d].max.toFixed(1)} °C</td>
+      </tr>`;
+  });
+}
 </script>
 
 </body>
 </html>
-
-
